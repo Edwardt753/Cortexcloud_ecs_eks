@@ -1,0 +1,236 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cortex-xdr
+  labels:
+    app.kubernetes.io/name: cortex-xdr
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/audit: privileged
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: xdr-agent-deployment
+  namespace: cortex-xdr
+type: Opaque
+stringData:
+  distribution-id: "468fcf0d844d4270b7b34db2e518c4d6"
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: xdr-agent-user
+  namespace: cortex-xdr
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: xdr-agent-role
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "pods", "namespaces"]
+  verbs: ["get", "list", "watch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: xdr-agent-role-binding-cortex-xdr
+subjects:
+- kind: ServiceAccount
+  name: xdr-agent-user
+  namespace: cortex-xdr
+roleRef:
+  kind: ClusterRole
+  name: xdr-agent-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/dockerconfigjson
+metadata:
+  name: cortex-docker-secret
+  namespace: cortex-xdr
+data:
+  .dockerconfigjson: eyJhdXRocyI6IHsiaHR0cHM6Ly9hc2lhLXNvdXRoZWFzdDItZG9ja2VyLnBrZy5kZXYiOiB7InVzZXJuYW1lIjogIl9qc29uX2tleSIsICJwYXNzd29yZCI6ICJ7XG4gIFwidHlwZVwiOiBcInNlcnZpY2VfYWNjb3VudFwiLFxuICBcInByb2plY3RfaWRcIjogXCJ4ZHItaWQtMjkwMzY5Nzc5Mjk0MFwiLFxuICBcInByaXZhdGVfa2V5X2lkXCI6IFwiNTY1YjUwNzEwODk1M2Q1OWI5M2UzYTg5MDEwZTU4YTA2MWQ3ZjcxNVwiLFxuICBcInByaXZhdGVfa2V5XCI6IFwiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXFxuTUlJRXZBSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS1l3Z2dTaUFnRUFBb0lCQVFDNnA2bVJtRlhQVHBnTlxcbjVwV0V3eDlsa1haSUZ1NzRlcFhISS9BTXUwb0o3VDlNVklHRmI2VkduMzZ4N2pnc2x5ajZxa21lcE5qRERKN2dcXG5HTll0bDN3eG5NaG5qRStzc2ZKRnZSUXN1UEdURWRyUkxSUFh5Z3dXSVRoRmZWaHFMdGdKRVZpbGgzRWxLY2dkXFxuTmZ4b0VlN0pKS1ZCNytIVGJOVmhBc3EzNnd5b2pKM001UllySDJlTFNoZEgvYWtjR1hkb0dXb0tTT1A1eVBFOFxcbld2NjRWdHBNMmQ5NnFVR3JVbTh3djN4c0x1ZVZXWXBxYldtRzEwRno0U0E5bXBJMmUzRHliMnpzZlQvZG92ODNcXG5lbHMwQ1YrY2VDdEVxWDhlRWRPSVRYS05LeVNLN1pWbzNiclZSWlloemloZGxxWVJJRUZCVVBqc05JeDlod1VoXFxuVXkvMnZnbWRBZ01CQUFFQ2dnRUFIWkc5Q1FNZktPeHBwZDRadHExVjY4MjJTcnorQU9Bajc5SEUwQWVGakZBSVxcbjFJdERTaTVzZWpwL0pDbmtaKy81dm5LNzlKcThlaDNRTjI1eWZralVGR1NpMGl0R0NKK0NEVzZOam5qWCt2VlFcXG4rdzA1NmxmOWxTM2x1bUJ5akJPOVcvdTRWWW9XTUdNazZyZTlpTnU2YVNRRWlBOFJSb3RQRWE0VEM1TFJiN2FJXFxuVkFvZWliT2gzMk4wOWZZSWpBQlExb0MrNzJsNzFtYzh3QUg1bjkxb0xGVTlJb1VZSHZEQU5ibzRJNEVaQ0gzVVxcbkUyVS9QalFidDBLQ205WW5sYXFvTlFnNGJ0K0o1RW8veG8xaTFNd2FmQ1JpVXhjZGY2NFVhVFhZT3ViditOUGlcXG5xM2wvampZKzFIN1dVRE16YXNuOVkvM3pIeTdKVmlkcmM0UE9QRGU3TXdLQmdRRG5aSm5sZ3UzdUtsYkFoa2FrXFxuSFpLakdWQUphbXJIdmhnc1BDNE1XSWQrQTdLUC9zb3ZTa05ENWJ6OXZqd25xNmNvSkVxU29mUTdCajF2Z0NvOVxcbk9mOXByY3V6bXlTNUFIaXFDVG54R3VxeVZuaXo3cDZEbXdiUm52eGR2ejIyVE1QM2Y5RFkvUVFOektnYzBEbWZcXG5sbFhyazBaN3hnL25VN0ozNHNZNzNPb2xNd0tCZ1FET2dSOEVuM0dkZUFPR3VOU0FiUEZuV3FjekIxQUk3ZExvXFxualE1QzIxSEpTWXJDZjA0elR3QXNiWVFLa3Njak5oR3lTV1FqUXBYancwcGI0VnZJSVRDTythTUdyK1YxbW9wOVxcbjdhSFpGUFZhRTVhcTlCVmw3RWk2TzQxTkJadkt6aWFCaERKQ0pPblI4Uys1VDB1cTQ1VnBLZmx1WVVFQ1hOVWJcXG5xUkM5REVkMTd3S0JnQ1AwOWhVOEswei9OMHZqa2NhZThkSjJkSUdDRCtYS0hHZURVb1NJblVWdnZhZXlxQ2lCXFxuR2NMTFNIc0Z2TU5OWVVSVG4yTDUxOEgwVGtldFd1TDR5RC9ieWZPM0FCWGZoT0NuWG1HaEZTZHhXSUJkYkRSM1xcbk9yQUlUSjhrd0tvN2M1aGFQRkg3djAyRnAvb1NRV0lUTW5iUkEvcm41RURHT00xNForV1ZocTBSQW9HQURGZWhcXG5UL2hycFByQVV6UUcxMm9yZjM3bWtXRTFnbU1jZ1BPMVQzK21RcjZYZ1lwMFZSSzZzdTBVd0VFSGorNHlYcEtPXFxuWHFFakxrckV6ZnNKTGt2MWlBWVpuVk8wQmpSblpLRm9VLzR4citHTjFzZmg0NGFjeml5ekJGQjZnRU9ULzVlMFxcbkhVbnhnNi9EcDNLNjFncm1LalB0Q1pEY2Z0U25sQkNseEhiUWFwY0NnWUIwTUo2ZzBjLzJuK2RhOTlhLzczQzFcXG41OXhzSEhTcGhUQWpBYWZSTjVBVzdBZUtNYlJLK1NIaW5EQVozR0dIYmJJRE5xbFdSM2FlcU9hUWphZGJra2x5XFxuL3BKVlRscEpMM1h0SG9sSHNiSEJrV05KSCtkcUV6VEFPRE92TmROR2Jnc01oT3RaL1RKOFEzQk1Vak1rVjFER1xcbmlwOS94VlhOSmJmTitBbHFoZEp1dEE9PVxcbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cXG5cIixcbiAgXCJjbGllbnRfZW1haWxcIjogXCJwdWxsLWltYWdlQHhkci1pZC0yOTAzNjk3NzkyOTQwLmlhbS5nc2VydmljZWFjY291bnQuY29tXCIsXG4gIFwiY2xpZW50X2lkXCI6IFwiMTE4MjcwMjI1MTM1MjEzMzM2ODQxXCIsXG4gIFwiYXV0aF91cmlcIjogXCJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20vby9vYXV0aDIvYXV0aFwiLFxuICBcInRva2VuX3VyaVwiOiBcImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuXCIsXG4gIFwiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsXCI6IFwiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzXCIsXG4gIFwiY2xpZW50X3g1MDlfY2VydF91cmxcIjogXCJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9yb2JvdC92MS9tZXRhZGF0YS94NTA5L3B1bGwtaW1hZ2UlNDB4ZHItaWQtMjkwMzY5Nzc5Mjk0MC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbVwiLFxuICBcInVuaXZlcnNlX2RvbWFpblwiOiBcImdvb2dsZWFwaXMuY29tXCJcbn1cbiIsICJlbWFpbCI6ICJwdWxsLWltYWdlQHhkci1pZC0yOTAzNjk3NzkyOTQwLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1dGgiOiAiWDJwemIyNWZhMlY1T25zaWRIbHdaU0k2SUNKelpYSjJhV05sWDJGalkyOTFiblFpTENBaWNISnZhbVZqZEY5cFpDSTZJQ0o0WkhJdGFXUXRNamt3TXpZNU56YzVNamswTUNJc0lDSndjbWwyWVhSbFgydGxlVjlwWkNJNklDSTFOalZpTlRBM01UQTRPVFV6WkRVNVlqa3paVE5oT0Rrd01UQmxOVGhoTURZeFpEZG1OekUxSWl3Z0luQnlhWFpoZEdWZmEyVjVJam9nSWkwdExTMHRRa1ZIU1U0Z1VGSkpWa0ZVUlNCTFJWa3RMUzB0TFZ4dVRVbEpSWFpCU1VKQlJFRk9RbWRyY1docmFVYzVkekJDUVZGRlJrRkJVME5DUzFsM1oyZFRhVUZuUlVGQmIwbENRVkZETm5BMmJWSnRSbGhRVkhCblRseHVOWEJYUlhkNE9XeHJXRnBKUm5VM05HVndXRWhKTDBGTmRUQnZTamRVT1UxV1NVZEdZalpXUjI0ek5uZzNhbWR6YkhscU5uRnJiV1Z3VG1wRVJFbzNaMXh1UjA1WmRHd3pkM2h1VFdodWFrVXJjM05tU2taMlVsRnpkVkJIVkVWa2NsSk1VbEJZZVdkM1YwbFVhRVptVm1oeFRIUm5Ta1ZXYVd4b00wVnNTMk5uWkZ4dVRtWjRiMFZsTjBwS1MxWkNOeXRJVkdKT1ZtaEJjM0V6Tm5kNWIycEtNMDAxVWxseVNESmxURk5vWkVndllXdGpSMWhrYjBkWGIwdFRUMUExZVZCRk9GeHVWM1kyTkZaMGNFMHlaRGsyY1ZWSGNsVnRPSGQyTTNoelRIVmxWbGRaY0hGaVYyMUhNVEJHZWpSVFFUbHRjRWt5WlRORWVXSXllbk5tVkM5a2IzWTRNMXh1Wld4ek1FTldLMk5sUTNSRmNWZzRaVVZrVDBsVVdFdE9TM2xUU3pkYVZtOHpZbkpXVWxwWmFIcHBhR1JzY1ZsU1NVVkdRbFZRYW5OT1NYZzVhSGRWYUZ4dVZYa3ZNblpuYldSQlowMUNRVUZGUTJkblJVRklXa2M1UTFGTlprdFBlSEJ3WkRSYWRIRXhWalk0TWpKVGNub3JRVTlCYWpjNVNFVXdRV1ZHYWtaQlNWeHVNVWwwUkZOcE5YTmxhbkF2U2tOdWExb3JMelYyYmtzM09VcHhPR1ZvTTFGT01qVjVabXRxVlVaSFUya3dhWFJIUTBvclEwUlhOazVxYm1wWUszWldVVnh1SzNjd05UWnNaamxzVXpOc2RXMUNlV3BDVHpsWEwzVTBWbGx2VjAxSFRXczJjbVU1YVU1MU5tRlRVVVZwUVRoU1VtOTBVRVZoTkZSRE5VeFNZamRoU1Z4dVZrRnZaV2xpVDJnek1rNHdPV1paU1dwQlFsRXhiME1yTnpKc056RnRZemgzUVVnMWJqa3hiMHhHVlRsSmIxVlpTSFpFUVU1aWJ6UkpORVZhUTBnelZWeHVSVEpWTDFCcVVXSjBNRXREYlRsWmJteGhjVzlPVVdjMFluUXJTalZGYnk5NGJ6RnBNVTEzWVdaRFVtbFZlR05rWmpZMFZXRlVXRmxQZFdKMkswNVFhVnh1Y1ROc0wycHFXU3N4U0RkWFZVUk5lbUZ6YmpsWkx6TjZTSGszU2xacFpISmpORkJQVUVSbE4wMTNTMEpuVVVSdVdrcHViR2QxTTNWTGJHSkJhR3RoYTF4dVNGcExha2RXUVVwaGJYSklkbWhuYzFCRE5FMVhTV1FyUVRkTFVDOXpiM1pUYTA1RU5XSjZPWFpxZDI1eE5tTnZTa1Z4VTI5bVVUZENhakYyWjBOdk9WeHVUMlk1Y0hKamRYcHRlVk0xUVVocGNVTlVibmhIZFhGNVZtNXBlamR3TmtSdGQySlNiblo0WkhaNk1qSlVUVkF6WmpsRVdTOVJVVTU2UzJkak1FUnRabHh1Ykd4WWNtc3dXamQ0Wnk5dVZUZEtNelJ6V1RjelQyOXNUWGRMUW1kUlJFOW5VamhGYmpOSFpHVkJUMGQxVGxOQllsQkdibGR4WTNwQ01VRkpOMlJNYjF4dWFsRTFRekl4U0VwVFdYSkRaakEwZWxSM1FYTmlXVkZMYTNOamFrNW9SM2xUVjFGcVVYQllhbmN3Y0dJMFZuWkpTVlJEVHl0aFRVZHlLMVl4Ylc5d09WeHVOMkZJV2taUVZtRkZOV0Z4T1VKV2JEZEZhVFpQTkRGT1FscDJTM3BwWVVKb1JFcERTazl1VWpoVEt6VlVNSFZ4TkRWV2NFdG1iSFZaVlVWRFdFNVZZbHh1Y1ZKRE9VUkZaREUzZDB0Q1owTlFNRGxvVlRoTE1Ib3ZUakIyYW10allXVTRaRW95WkVsSFEwUXJXRXRJUjJWRVZXOVRTVzVWVm5aMllXVjVjVU5wUWx4dVIyTk1URk5JYzBaMlRVNU9XVlZTVkc0eVREVXhPRWd3Vkd0bGRGZDFURFI1UkM5aWVXWlBNMEZDV0dab1QwTnVXRzFIYUVaVFpIaFhTVUprWWtSU00xeHVUM0pCU1ZSS09HdDNTMjgzWXpWb1lWQkdTRGQyTURKR2NDOXZVMUZYU1ZSTmJtSlNRUzl5YmpWRlJFZFBUVEUwV2l0WFZtaHhNRkpCYjBkQlJFWmxhRnh1VkM5b2NuQlFja0ZWZWxGSE1USnZjbVl6TjIxclYwVXhaMjFOWTJkUVR6RlVNeXR0VVhJMldHZFpjREJXVWtzMmMzVXdWWGRGUlVocUt6UjVXSEJMVDF4dVdIRkZha3hyY2tWNlpuTktUR3QyTVdsQldWcHVWazh3UW1wU2JscExSbTlWTHpSNGNpdEhUakZ6Wm1nME5HRmplbWw1ZWtKR1FqWm5SVTlVTHpWbE1GeHVTRlZ1ZUdjMkwwUndNMHMyTVdkeWJVdHFVSFJEV2tSalpuUlRibXhDUTJ4NFNHSlJZWEJqUTJkWlFqQk5TalpuTUdNdk1tNHJaR0U1T1dFdk56TkRNVnh1TlRsNGMwaElVM0JvVkVGcVFXRm1VazQxUVZjM1FXVkxUV0pTU3l0VFNHbHVSRUZhTTBkSFNHSmlTVVJPY1d4WFVqTmhaWEZQWVZGcVlXUmlhMnRzZVZ4dUwzQktWbFJzY0VwTU0xaDBTRzlzU0hOaVNFSnJWMDVLU0N0a2NVVjZWRUZQUkU5MlRtUk9SMkpuYzAxb1QzUmFMMVJLT0ZFelFrMVZhazFyVmpGRVIxeHVhWEE1TDNoV1dFNUtZbVpPSzBGc2NXaGtTblYwUVQwOVhHNHRMUzB0TFVWT1JDQlFVa2xXUVZSRklFdEZXUzB0TFMwdFhHNGlMQ0FpWTJ4cFpXNTBYMlZ0WVdsc0lqb2dJbkIxYkd3dGFXMWhaMlZBZUdSeUxXbGtMVEk1TURNMk9UYzNPVEk1TkRBdWFXRnRMbWR6WlhKMmFXTmxZV05qYjNWdWRDNWpiMjBpTENBaVkyeHBaVzUwWDJsa0lqb2dJakV4T0RJM01ESXlOVEV6TlRJeE16TXpOamcwTVNJc0lDSmhkWFJvWDNWeWFTSTZJQ0pvZEhSd2N6b3ZMMkZqWTI5MWJuUnpMbWR2YjJkc1pTNWpiMjB2Ynk5dllYVjBhREl2WVhWMGFDSXNJQ0owYjJ0bGJsOTFjbWtpT2lBaWFIUjBjSE02THk5dllYVjBhREl1WjI5dloyeGxZWEJwY3k1amIyMHZkRzlyWlc0aUxDQWlZWFYwYUY5d2NtOTJhV1JsY2w5NE5UQTVYMk5sY25SZmRYSnNJam9nSW1oMGRIQnpPaTh2ZDNkM0xtZHZiMmRzWldGd2FYTXVZMjl0TDI5aGRYUm9NaTkyTVM5alpYSjBjeUlzSUNKamJHbGxiblJmZURVd09WOWpaWEowWDNWeWJDSTZJQ0pvZEhSd2N6b3ZMM2QzZHk1bmIyOW5iR1ZoY0dsekxtTnZiUzl5YjJKdmRDOTJNUzl0WlhSaFpHRjBZUzk0TlRBNUwzQjFiR3d0YVcxaFoyVWxOREI0WkhJdGFXUXRNamt3TXpZNU56YzVNamswTUM1cFlXMHVaM05sY25acFkyVmhZMk52ZFc1MExtTnZiU0lzSUNKMWJtbDJaWEp6WlY5a2IyMWhhVzRpT2lBaVoyOXZaMnhsWVhCcGN5NWpiMjBpZlE9PSJ9fX0=
+
+---
+
+
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cortex-agent
+  namespace: cortex-xdr
+  labels:
+
+    app.kubernetes.io/name: cortex-agent
+    app.kubernetes.io/part-of: cortex
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/version: "9.1.0.144052"
+
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cortex-agent
+
+  updateStrategy:
+    type: RollingUpdate
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cortex-agent
+      annotations:
+
+        container.apparmor.security.beta.kubernetes.io/cortex-agent: unconfined
+
+    spec:
+      serviceAccountName: xdr-agent-user
+
+      nodeSelector:
+        kubernetes.io/os: linux
+
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      
+      tolerations:
+
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: PreferNoSchedule
+      - operator: Exists
+        effect: NoExecute
+
+      containers:
+      - name: cortex-agent
+        
+        image: asia-southeast2-docker.pkg.dev/xdr-id-2903697792940/agent-docker/cortex-agent:9.1.0.144052
+
+        securityContext:
+          appArmorProfile:
+            type: Unconfined
+          capabilities:
+            add:
+            - SYS_ADMIN
+            - SYSLOG
+            - SYS_CHROOT
+            - SYS_MODULE
+            - SYS_PTRACE
+            - SYS_RESOURCE
+            - SYS_RAWIO
+            - DAC_OVERRIDE
+            - DAC_READ_SEARCH
+            - NET_ADMIN
+            - NET_RAW
+            - IPC_LOCK
+            - FOWNER
+            - KILL
+            - SETGID
+            - SETUID
+
+        env:
+        - name: XDR_HOST_ROOT
+          value: "/host-fs"
+        - name: XDR_POD_INFO
+          value: "/var/run/pod-info"
+        - name: XDR_CLUSTER_NAME_URL
+          value: "metadata2"
+        - name: XDR_CLUSTER_NAME
+          value: ""
+        - name: XDR_VAR_LOG_HOST_PATH
+          value: "/var/log"
+        - name: XDR_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        
+
+        volumeMounts:
+
+        - name: host-fs
+          mountPath: /host-fs
+          readOnly: true
+
+        - name: var-log
+          mountPath: /var/log
+
+        - name: host-km-directory
+          mountPath: /lib/modules
+
+        - name: pod-info
+          mountPath: /var/run/pod-info
+          readOnly: true
+
+        - name: agent-ids
+          mountPath: /etc/traps
+
+        - name: deployment-secrets
+          mountPath: /opt/traps/config/deployment
+          readOnly: true
+
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "600Mi"
+            
+          limits:
+            memory: "2Gi"
+            
+
+      terminationGracePeriodSeconds: 90
+
+      volumes:
+      - name: host-fs
+        hostPath:
+          path: /
+          type: Directory
+
+      - name: var-log
+        hostPath:
+          path: "/var/log"
+          type: DirectoryOrCreate
+      - name: host-km-directory
+        hostPath:
+          path: /lib/modules
+
+      - name: pod-info
+        downwardAPI:
+          items:
+          - path: uid
+            fieldRef:
+              fieldPath: metadata.uid
+          - path: name
+            fieldRef:
+              fieldPath: metadata.name
+          - path: labels
+            fieldRef:
+              fieldPath: metadata.labels
+          - path: annotations
+            fieldRef:
+              fieldPath: metadata.annotations
+      - name: agent-ids
+        hostPath:
+            path: /etc/traps
+            type: DirectoryOrCreate
+
+      - name: deployment-secrets
+        secret:
+          secretName: xdr-agent-deployment
+      
+      imagePullSecrets:
+      - name: cortex-docker-secret
